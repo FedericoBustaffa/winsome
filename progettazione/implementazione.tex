@@ -1,0 +1,40 @@
+\section{Implementazione}
+Il social network \`e basato sull'interazione di due entit\`a principali: \textbf{client} e \textbf{server}. I client
+usufruiscono dei servizi messi a disposizione dal server, il quale si occupa di tutti i dettagli implementativi delle
+varie funzionalit\`a.
+
+Le interazioni tra client e server avvengono tramite diversi protocolli (TCP, UDP o RMI), i quali variano a seconda del
+tipo di servizio che si richiede.
+
+\subsection{Server}
+Il \textbf{server} \`e unico e fornisce un insieme di servizi al client. Si occupa inoltre di memorizzare tutto ci\`o che
+gli utenti fanno durante la permanenza sul social network.
+
+Deve inoltre implementare meccanismi interni per il controllo dei post e l'invio di notifiche agli utenti quando necessario.
+
+Il server rende persistenti le informazioni di cui \`e in possesso salvandone il contenuto su file di tipo \textbf{json} e
+andando a ripristinare lo stato in cui era al momento dello spegnimento.
+
+\subsection{Client}
+I \textbf{client} comunicano col server per poter interagire fra loro. Per poter usufruire dei servizi devono per\`o essere
+registrati o loggati.
+
+\subsection{Strutture}
+Tra le strutture che useremo avremo oggetti che rappresentano diverse entit\`a all'interno del social network come:
+\begin{itemize}
+	\item \textbf{Utente}: rappresenta l'utente con relativi dati tra cui:
+	      \begin{itemize}
+		      \item \textbf{Nome utente}: univoco per ciascun utente.
+		      \item \textbf{Password}: necessaria per il login.
+	      \end{itemize}
+	\item \textbf{Post}: rappresenta un post e contiene informazioni come:
+	      \begin{itemize}
+		      \item \textbf{Titolo}: titolo del post.
+		      \item \textbf{Testo}: contenuto del post.
+		      \item \textbf{Autore}: nome dell'utente che ha scritto il post.
+		      \item \textbf{Voti}: numero di upvote e downvote.
+		      \item \textbf{Commenti}: lista di commenti al post.
+	      \end{itemize}
+\end{itemize}
+
+\subsection{Comunicazione}
