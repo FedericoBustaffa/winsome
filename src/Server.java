@@ -5,17 +5,20 @@ import java.rmi.registry.Registry;
 import java.rmi.server.RemoteServer;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Scanner;
-import java.util.Vector;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class Server extends RemoteServer implements Registrator {
 
 	private String name;
 	private Registry registration_registry;
-	private Vector<User> users;
+	private Set<User> users;
+	private Set<Post> posts;
 
-	public Server(String name, int port) {
-		this.name = name;
-		this.users = new Vector<User>();
+	public Server(int port) {
+		this.name = "WINSOME";
+		this.users = new TreeSet<User>();
+		this.posts = new TreeSet<Post>();
 		try {
 			UnicastRemoteObject.exportObject(this, 0);
 			LocateRegistry.createRegistry(port);
@@ -65,8 +68,9 @@ public class Server extends RemoteServer implements Registrator {
 		return false;
 	}
 
+	// MAIN
 	public static void main(String[] args) throws InterruptedException {
-		Server winsome = new Server("WINSOME", 4000);
+		Server winsome = new Server(4000);
 		winsome.start();
 		Scanner scanner = new Scanner(System.in);
 		scanner.nextLine();
