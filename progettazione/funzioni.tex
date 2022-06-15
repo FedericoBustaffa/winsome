@@ -1,0 +1,50 @@
+\chapter{Panoramica WINSOME}
+La rete WINSOME simula un social network in grado di fornire diverse funzionalit\`a agli utenti in modo che essi possano
+interagire tra loro cos\`i da ottenere ricompense in \textbf{wincoin}.
+
+\section{Funzionalit\`a utente}
+\begin{itemize}
+	\item \textbf{Registrazione}: registrare un nuovo utente (con lista di \textbf{tag}).
+	\item \textbf{Login}: accedere a WINSOME se gi\`a registrati.
+	\item \textbf{Pubblicazione post}: pubblicare un post sul mio \textbf{blog}.
+	\item \textbf{Follow}: seguire utenti con almeno un tag in comune.
+	\item \textbf{Unfollow}: smettere di seguire altri utenti.
+	\item \textbf{Upvote e Downvote}: votare positivamente (\textbf{upvote}) o negativamente (\textbf{downvote}) post di
+	      altri utenti.
+	\item \textbf{Commento}: commentare post di altri utenti.
+	\item \textbf{Visualizzazione feed}: visualizzare la lista di post pubblicati dagli utenti seguiti.
+	\item \textbf{Rewin}: pubblicazione sul proprio blog di un post pubblicato da un altro utente.
+	\item \textbf{Conversione wincoin/bitcoin}: fornisce il cambio di valuta consultando un servizio esterno.
+	\item \textbf{Visualizzazione portafoglio}: visualizzazione dei wincoin posseduti.
+	\item \textbf{Logout}: disconnessione da WINSOME.
+\end{itemize}
+
+\section{Funzionalit\`a automatiche}
+\begin{itemize}
+	\item \textbf{Ricompensa}: un utente viene ricompensato in \textbf{wincoin} se pubblica contenuti interessanti e/o se
+	      contribuisce attivamente, votando positivamente o commentando i post di altri utenti.
+	\item \textbf{Aggiornamento portafogli}: aggiorna il portafogli di un utente quando riceve una ricompensa.
+	\item \textbf{Ricompensa Autore}: ottenuta se un utente pubblica contenuti che riscuotono successo.
+	\item \textbf{Ricompensa Curatore}: ottenuta dagli utenti che contribuiscono attivamente alla crescita di un post.
+	\item \textbf{Calcolo ricompense}: calcolo della ricompensa (in wincoin) di un certo post, assegnando una
+	      certa percentuale all'autore e l'altra ai curatori.
+	\item \textbf{Controllo periodico}: periodicamente i post vengono controllati e conseguentemente si calcola la ricompensa
+	      e si aggiornano i portafogli.
+\end{itemize}
+
+\section{Vincoli}
+\begin{itemize}
+	\item Si pu\`o accedere ai servizi solo dopo essersi registrati/loggati.
+	\item La lista di tag dev'essere composta al massimo da cinque tag e non pu\`o essere cambiata dopo la registrazione.
+\end{itemize}
+
+\section{Componenti del sistema}
+Il social network si basa sull'interazione di due componenti principali:
+\begin{itemize}
+	\item \textbf{Client}: fornisce un interfaccia all'utente e comunica col server. Fa inoltre parte di un gruppo
+	      multicast da cui riceve messaggi di aggiornamenti del portafoglio.
+	\item \textbf{Server}: implementa tutti i servizi del social network elencati in precedenza e memorizza utenti e
+	      relazioni fra essi.
+
+	      Manda notifiche nel caso in cui aggiorni qualche portafoglio.
+\end{itemize}
