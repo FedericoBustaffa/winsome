@@ -4,6 +4,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.RemoteServer;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Scanner;
 import java.util.Vector;
 
 public class Server extends RemoteServer implements Registrator {
@@ -44,14 +45,33 @@ public class Server extends RemoteServer implements Registrator {
 	}
 
 	// REGISTRATOR INTERFACE
-	public void userRegistration(String name, String password) throws RemoteException {
+	public boolean registration(String name, String password) throws RemoteException {
+		for (User u : users) {
+			if (u.getName().equals(name))
+				return false;
+		}
 		users.add(new User(name, password));
+		return true;
 	}
 
-	public void listUsers() throws RemoteException {
+	public boolean login(String name, String password) throws RemoteException {
+
 		for (User u : users) {
-			System.out.println(u.getName());
+			if (u.getName().equals(name) && u.getPassword().equals(password)) {
+				return true;
+			}
 		}
+
+		return false;
+	}
+
+	public static void main(String[] args) throws InterruptedException {
+		Server winsome = new Server("WINSOME", 4000);
+		winsome.start();
+		Scanner scanner = new Scanner(System.in);
+		scanner.nextLine();
+		scanner.close();
+		winsome.shutdown();
 	}
 
 }

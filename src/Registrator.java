@@ -3,8 +3,8 @@ import java.rmi.RemoteException;
 
 public interface Registrator extends Remote {
 
-	public void userRegistration(String name, String password) throws RemoteException;
+	public boolean registration(String name, String password) throws RemoteException;
 
-	public void listUsers() throws RemoteException;
+	public boolean login(String name, String password) throws RemoteException;
 
 }

@@ -2,6 +2,7 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.util.Scanner;
 
 public class Client {
 
@@ -29,20 +30,39 @@ public class Client {
 	}
 
 	// REGISTRATION INTERFACE
-	public void registration() {
+	public boolean registration() {
 		try {
-			registrator.userRegistration(user.getName(), user.getPassword());
+			return registrator.registration(user.getName(), user.getPassword());
 		} catch (RemoteException e) {
 			e.printStackTrace();
 			System.out.println(e.toString());
 		}
+		return false;
 	}
 
-	public void listUsers() {
+	public void login() {
 		try {
-			registrator.listUsers();
+			Scanner input = new Scanner(System.in);
+			while (!registrator.login(user.getName(), user.getPassword())) {
+				System.out.println("Nome utente o password non validi");
+				System.out.print("Nome utente: ");
+				user.setName(input.nextLine());
+				System.out.print("Password: ");
+				user.setPassword(input.nextLine());
+			}
+			input.close();
+			System.out.println("Login effettuato");
 		} catch (RemoteException e) {
 			e.printStackTrace();
+		}
+	}
+
+	public static void main(String[] args) {
+		Client client = new Client(args[0], args[1]);
+		if (!client.registration()) {
+			client.login();
+		} else {
+			System.out.println("Registrazione effettuata");
 		}
 	}
 }
