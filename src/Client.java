@@ -2,7 +2,6 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.List;
 import java.util.Scanner;
 
 public class Client {
@@ -10,8 +9,7 @@ public class Client {
 	private User user;
 	private Registrator registrator;
 
-	public Client(String name, String password, List<String> tags) {
-		this.user = new User(name, password, tags);
+	public Client() {
 		try {
 			Registry registry = LocateRegistry.getRegistry(4000);
 			registrator = (Registrator) registry.lookup("WINSOME");
@@ -20,18 +18,6 @@ public class Client {
 		} catch (NotBoundException e) {
 			e.printStackTrace();
 		}
-	}
-
-	public Client(String name, String password) {
-
-	}
-
-	public User getUser() {
-		return user;
-	}
-
-	public void setUser(User user) {
-		this.user = user;
 	}
 
 	// REGISTRATION INTERFACE
@@ -63,6 +49,25 @@ public class Client {
 	}
 
 	public static void main(String[] args) {
-		Client client = new Client(args[0], args[1]);
+		if (args.length != 2) {
+			System.out.println("USAGE: java Client <name> <password>");
+			return;
+		}
+
+		Client client = new Client();
+		System.out.printf("1: Registration\n2: Login\nChoice: ");
+		int choice;
+		Scanner scanner = new Scanner(System.in);
+		do {
+			choice = scanner.nextInt();
+			scanner.nextLine();
+		} while (choice != 1 && choice != 2);
+
+		if (choice == 1)
+			client.registration();
+		else
+			client.login();
+
+		scanner.close();
 	}
 }
