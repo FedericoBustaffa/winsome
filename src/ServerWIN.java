@@ -10,16 +10,16 @@ public class ServerWIN {
 	private Set<User> users;
 
 	// services
-	private LoggerImpl logger;
+	private RegistratorImpl registrator;
 
 	public ServerWIN(int port) throws RemoteException {
 		users = new TreeSet<User>();
-		logger = new LoggerImpl(port, users);
+		registrator = new RegistratorImpl(port, users);
 	}
 
 	public void start() {
 		try {
-			logger.start();
+			registrator.start();
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
@@ -27,7 +27,7 @@ public class ServerWIN {
 
 	public void shutdown() {
 		try {
-			logger.shutdown();
+			registrator.shutdown();
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		} catch (NotBoundException e) {

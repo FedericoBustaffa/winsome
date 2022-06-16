@@ -1,9 +1,9 @@
 
-public class LoggerException extends Exception {
+public class LogException extends Exception {
 
 	private String msg;
 
-	public LoggerException(String msg) {
+	public LogException(String msg) {
 		this.msg = msg;
 	}
 

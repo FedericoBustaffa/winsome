@@ -9,13 +9,13 @@ import java.util.Scanner;
 public class ClientWIN {
 
 	private String username;
-	private Logger logger;
+	private Registrator registrator;
 
 	public ClientWIN() {
 		username = null;
 		try {
 			Registry registry = LocateRegistry.getRegistry(4000);
-			logger = (Logger) registry.lookup(LoggerImpl.NAME);
+			registrator = (Registrator) registry.lookup(RegistratorImpl.NAME);
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		} catch (NotBoundException e) {
@@ -31,16 +31,16 @@ public class ClientWIN {
 		this.username = username;
 	}
 
-	// LOGGER
+	// registrator
 	public void register(String[] command) {
 		try {
 			// controllo numero minimo di argomenti
 			if (command.length < 3)
-				throw new LoggerException("USAGE: register <username> <password> <tags>");
+				throw new LogException("USAGE: register <username> <password> <tags>");
 
 			// controllo numero massimo di argomenti
 			if (command.length > 8)
-				throw new LoggerException("inserire al massimo 5 tag");
+				throw new LogException("inserire al massimo 5 tag");
 
 			// creazione lista tag
 			List<String> tags = new ArrayList<String>();
@@ -49,23 +49,23 @@ public class ClientWIN {
 			}
 
 			// accesso al servizio
-			logger.register(command[1], command[2], tags);
+			registrator.register(command[1], command[2], tags);
 			System.out.println("registrazione effettuata");
 		} catch (RemoteException e) {
 			e.printStackTrace();
-		} catch (LoggerException e) {
+		} catch (LogException e) {
 			System.out.println("registrazione fallita: " + e.getMessage());
 		}
 	}
 
 	public void login(String[] command) {
 		try {
-			logger.login(command[1], command[2]);
+			registrator.login(command[1], command[2]);
 			username = command[1];
 			System.out.println("login effettuato");
 		} catch (RemoteException e) {
 			e.printStackTrace();
-		} catch (LoggerException e) {
+		} catch (LogException e) {
 			System.out.println("login fallito: " + e.getMessage());
 		} catch (IndexOutOfBoundsException e) {
 			System.out.println("COMMAND USAGE: login <username> <password>");
@@ -74,12 +74,12 @@ public class ClientWIN {
 
 	public void logout() {
 		try {
-			logger.logout(username);
+			registrator.logout(username);
 			username = null;
 			System.out.println("logout effettuato");
 		} catch (RemoteException e) {
 			e.printStackTrace();
-		} catch (LoggerException e) {
+		} catch (LogException e) {
 			System.out.println("logout fallito: " + e.getMessage());
 		}
 	}

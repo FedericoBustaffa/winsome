@@ -6,36 +6,36 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
 import java.util.Set;
 
-public class LoggerImpl extends UnicastRemoteObject implements Logger {
+public class RegistratorImpl extends UnicastRemoteObject implements Registrator {
 
-	public static final String NAME = "LOGGER";
+	public static final String NAME = "REGISTRATOR";
 	private Registry registry;
 
 	private Set<User> users;
 
-	public LoggerImpl(int port, Set<User> users) throws RemoteException {
+	public RegistratorImpl(int port, Set<User> users) throws RemoteException {
 		LocateRegistry.createRegistry(port);
 		registry = LocateRegistry.getRegistry(port);
 		this.users = users;
 	}
 
 	public void start() throws RemoteException {
-		registry.rebind(LoggerImpl.NAME, this);
+		registry.rebind(RegistratorImpl.NAME, this);
 	}
 
 	public void shutdown() throws RemoteException, NotBoundException {
-		registry.unbind(LoggerImpl.NAME);
+		registry.unbind(RegistratorImpl.NAME);
 		UnicastRemoteObject.unexportObject(this, true);
 	}
 
 	// INTERFACE IMPLEMENTATION
 	public void register(String username, String password, List<String> tags)
-			throws RemoteException, LoggerException {
+			throws RemoteException, LogException {
 		if (!users.add(new User(username, password, tags)))
-			throw new LoggerException("utente gia' registrato");
+			throw new LogException("utente gia' registrato");
 	}
 
-	public void login(String username, String password) throws RemoteException, LoggerException {
+	public void login(String username, String password) throws RemoteException, LogException {
 		for (User u : users) {
 			if (username.equals(u.getUsername())) {
 				if (password.equals(u.getPassword())) {
@@ -43,20 +43,20 @@ public class LoggerImpl extends UnicastRemoteObject implements Logger {
 						u.login();
 						return;
 					} else {
-						throw new LoggerException("login gia' effettuato");
+						throw new LogException("login gia' effettuato");
 					}
 				} else {
-					throw new LoggerException("password non corretta");
+					throw new LogException("password non corretta");
 				}
 			}
 		}
 
-		throw new LoggerException("registrarsi prima di effettuare il login");
+		throw new LogException("registrarsi prima di effettuare il login");
 	}
 
-	public void logout(String username) throws RemoteException, LoggerException {
+	public void logout(String username) throws RemoteException, LogException {
 		if (username == null)
-			throw new LoggerException("effettuare prima il login");
+			throw new LogException("effettuare prima il login");
 
 		for (User u : users) {
 			if (username.equals(u.getUsername())) {
@@ -65,7 +65,7 @@ public class LoggerImpl extends UnicastRemoteObject implements Logger {
 			}
 		}
 
-		throw new LoggerException("username errato");
+		throw new LogException("username errato");
 	}
 
 }
