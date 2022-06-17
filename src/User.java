@@ -1,4 +1,6 @@
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class User implements Comparable<User> {
 
@@ -6,12 +8,14 @@ public class User implements Comparable<User> {
 	private String password;
 	private List<String> tags;
 	private boolean logged;
+	private Set<String> followers;
 
 	public User(String username, String password, List<String> tags) {
 		this.username = username;
 		this.password = password;
 		this.tags = tags;
 		this.logged = false;
+		this.followers = new TreeSet<String>();
 	}
 
 	public String getUsername() {
@@ -44,6 +48,14 @@ public class User implements Comparable<User> {
 
 	public void logout() {
 		logged = false;
+	}
+
+	public void follow(String username) {
+		followers.add(username);
+	}
+
+	public void unfollow(String username) {
+		followers.remove(username);
 	}
 
 	@Override
