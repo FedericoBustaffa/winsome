@@ -26,34 +26,34 @@ public class ClientHandler implements Runnable {
 	}
 
 	public void login(String username, String password) throws IOException {
-		for (User u : users) {
-			if (username.equals(u.getUsername())) {
-				if (password.equals(u.getPassword())) {
-					if (!u.isLogged()) {
-						u.login();
-						user = u;
-						writer.write("login effettuato".getBytes());
-						return;
-					} else {
-						writer.write("login gia' effettuato".getBytes());
-						return;
+		if (user == null) {
+			for (User u : users) {
+				if (username.equals(u.getUsername())) {
+					if (password.equals(u.getPassword())) {
+						if (!u.isLogged()) {
+							u.login();
+							user = u;
+							writer.write("login effettuato".getBytes());
+							return;
+						} else {
+							writer.write("password non corretta".getBytes());
+							return;
+						}
 					}
-				} else {
-					writer.write("password non corretta".getBytes());
-					return;
 				}
 			}
+
+			writer.write("registrarsi prima di effettuare il login".getBytes());
+		} else {
+			if (username.equals(user.getUsername()))
+				writer.write("login gia' effettuato".getBytes());
+			else
+				writer.write("effettuare prima il logout".getBytes());
 		}
 
-		writer.write("registrarsi prima di effettuare il login".getBytes());
 	}
 
 	public void logout(String username) throws IOException {
-		if (username == null) {
-			writer.write("effettuare prima il login".getBytes());
-			return;
-		}
-
 		for (User u : users) {
 			if (username.equals(u.getUsername())) {
 				u.logout();
@@ -81,20 +81,25 @@ public class ClientHandler implements Runnable {
 							writer.write("USAGE: login <username> <password>".getBytes());
 						else
 							login(command[1], command[2]);
-						user.setUsername(command[1]);
 						break;
 
 					case "logout":
-						logout(user.getUsername());
+						if (user == null)
+							writer.write("effettuare prima il login".getBytes());
+						else
+							logout(user.getUsername());
 						break;
 
 					case "exit":
-						logout(user.getUsername());
+						if (user != null) {
+							user.logout();
+						}
+						writer.write("terminato".getBytes());
 						socket.close();
 						break;
 
 					default:
-						writer.write("invalid syntax".getBytes());
+						writer.write("invalid command".getBytes());
 						break;
 				}
 
