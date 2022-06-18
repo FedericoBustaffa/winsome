@@ -50,25 +50,23 @@ public class Client {
 	// registrator
 	public void register(String[] command) {
 		try {
-			// controllo numero minimo di argomenti
 			if (command.length < 3) {
-				System.out.println("USAGE: register <username> <password> <tags>");
+				System.out.println("< USAGE: register <username> <password> <tags>");
 				return;
 			}
 
-			// creazione lista tag
 			List<String> tags = new ArrayList<String>();
 			for (int i = 3; i < command.length; i++) {
-				tags.add(command[i]);
+				if (!tags.contains(command[i]))
+					tags.add(command[i]);
 			}
 
-			// accesso al servizio
 			registrator.register(command[1], command[2], tags);
-			System.out.println("registrazione effettuata");
+			System.out.println("< registrazione effettuata");
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		} catch (LogException e) {
-			System.out.println("registrazione fallita: " + e.getMessage());
+			System.out.println(e.getMessage());
 		}
 	}
 
@@ -80,7 +78,7 @@ public class Client {
 			writer.write(command.getBytes());
 			bytes = reader.read(b);
 			response = new String(b, 0, bytes);
-			System.out.println("< " + response);
+			System.out.println(response);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -93,6 +91,8 @@ public class Client {
 		do {
 			System.out.print("> ");
 			command = scanner.nextLine();
+			if (command.isBlank())
+				continue;
 			if (command.contains("register")) {
 				client.register(command.split(" "));
 			} else {

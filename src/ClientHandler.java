@@ -4,6 +4,7 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Set;
+import java.util.TreeSet;
 
 public class ClientHandler implements Runnable {
 
@@ -33,24 +34,70 @@ public class ClientHandler implements Runnable {
 						if (!u.isLogged()) {
 							u.login();
 							user = u;
-							writer.write("login effettuato".getBytes());
-							return;
-						} else {
-							writer.write("password non corretta".getBytes());
+							writer.write("< login effettuato".getBytes());
 							return;
 						}
+					} else {
+						writer.write("< password non corretta".getBytes());
+						return;
 					}
 				}
 			}
 
-			writer.write("registrarsi prima di effettuare il login".getBytes());
+			writer.write("< registrarsi prima di effettuare il login".getBytes());
 		} else {
 			if (username.equals(user.getUsername()))
-				writer.write("login gia' effettuato".getBytes());
+				writer.write("< login gia' effettuato".getBytes());
 			else
-				writer.write("effettuare prima il logout".getBytes());
+				writer.write("< effettuare prima il logout".getBytes());
 		}
 
+	}
+
+	public void listUsers() throws IOException {
+		if (user == null) {
+			writer.write("< effettuare prima il login".getBytes());
+			return;
+		}
+
+		Set<String> common_tag_users = new TreeSet<String>();
+		for (User u : users) {
+			if (!u.getUsername().equals(user.getUsername())) {
+				for (String tag : user.getTags()) {
+					if (u.getTags().contains(tag)) {
+						common_tag_users.add(u.getUsername());
+						break;
+					}
+				}
+			}
+		}
+
+		if (common_tag_users.isEmpty())
+			writer.write("< nessun utente trovato".getBytes());
+		else {
+			StringBuilder users_list = new StringBuilder("< utenti con tag comuni:\n");
+			for (String username : common_tag_users) {
+				users_list.append("< \t" + username + "\n");
+			}
+			users_list.setCharAt(users_list.length() - 1, '\0');
+			writer.write(users_list.toString().getBytes());
+		}
+	}
+
+	public void listFollowers() throws IOException {
+		if (user == null) {
+			writer.write("< effettuare prima il login".getBytes());
+			return;
+		}
+		writer.write("< list followers".getBytes());
+	}
+
+	public void listFollowing() throws IOException {
+		if (user == null) {
+			writer.write("< effettuare prima il login".getBytes());
+			return;
+		}
+		writer.write("< list following".getBytes());
 	}
 
 	public void logout(String username) throws IOException {
@@ -58,12 +105,12 @@ public class ClientHandler implements Runnable {
 			if (username.equals(u.getUsername())) {
 				u.logout();
 				user = null;
-				writer.write("logout effettuato".getBytes());
+				writer.write("< logout effettuato".getBytes());
 				return;
 			}
 		}
 
-		writer.write("username errato".getBytes());
+		writer.write("< username errato".getBytes());
 	}
 
 	public void run() {
@@ -78,28 +125,53 @@ public class ClientHandler implements Runnable {
 				switch (command[0]) {
 					case "login":
 						if (command.length != 3)
-							writer.write("USAGE: login <username> <password>".getBytes());
+							writer.write("< USAGE: login <username> <password>".getBytes());
 						else
 							login(command[1], command[2]);
 						break;
 
+					case "list":
+						if (command.length == 2) {
+							switch (command[1]) {
+								case "users":
+									listUsers();
+									break;
+
+								case "followers":
+									listFollowers();
+									break;
+
+								case "following":
+									listFollowing();
+									break;
+
+								default:
+									writer.write("< invalid command".getBytes());
+									break;
+							}
+						} else {
+							writer.write("< invalid command".getBytes());
+						}
+						break;
+
 					case "logout":
 						if (user == null)
-							writer.write("effettuare prima il login".getBytes());
+							writer.write("< effettuare prima il login".getBytes());
 						else
 							logout(user.getUsername());
 						break;
 
 					case "exit":
 						if (user != null) {
+							// se si e' loggati si fa il logout
 							user.logout();
 						}
-						writer.write("terminato".getBytes());
+						writer.write("< terminato".getBytes());
 						socket.close();
 						break;
 
 					default:
-						writer.write("invalid command".getBytes());
+						writer.write("< invalid command".getBytes());
 						break;
 				}
 
