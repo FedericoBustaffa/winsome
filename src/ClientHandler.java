@@ -1,26 +1,46 @@
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+
 public class ClientHandler implements Runnable {
 
-	private Set<User> users;
+	private Map<String, User> users;
+	private Map<String, Notifier> online_users;
 	private User user = null;
 
+	// TCP
 	private Socket socket;
 	private InputStream reader;
 	private OutputStream writer;
 
-	public ClientHandler(ServerSocket server_socket, Set<User> users) {
+	// JSON
+	private ObjectMapper mapper;
+	private File user_file;
+
+	public ClientHandler(ServerSocket server_socket, Map<String, User> users, Map<String, Notifier> online_users) {
 		this.users = users;
+		this.online_users = online_users;
 		try {
 			socket = server_socket.accept();
 			reader = socket.getInputStream();
 			writer = socket.getOutputStream();
+
+			mapper = new ObjectMapper();
+			mapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
+			mapper.enable(SerializationFeature.INDENT_OUTPUT);
+
+			user_file = new File("json_files/user.json");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -28,30 +48,25 @@ public class ClientHandler implements Runnable {
 
 	public void login(String username, String password) throws IOException {
 		if (user == null) {
-			for (User u : users) {
-				if (username.equals(u.getUsername())) {
-					if (password.equals(u.getPassword())) {
-						if (!u.isLogged()) {
-							u.login();
-							user = u;
-							writer.write("< login effettuato".getBytes());
-							return;
-						}
-					} else {
-						writer.write("< password non corretta".getBytes());
-						return;
-					}
+			user = users.get(username);
+			if (user == null)
+				writer.write("< registrarsi prima di effettuare il login".getBytes());
+			else if (password.equals(user.getPassword())) {
+				if (!user.isLogged()) {
+					user.login();
+					mapper.writeValue(user_file, user);
+					writer.write("< login effettuato".getBytes());
+				} else {
+					writer.write("< profilo gia' connesso su un altro dispositivo".getBytes());
 				}
-			}
-
-			writer.write("< registrarsi prima di effettuare il login".getBytes());
+			} else
+				writer.write("< password non corretta".getBytes());
 		} else {
 			if (username.equals(user.getUsername()))
 				writer.write("< login gia' effettuato".getBytes());
 			else
 				writer.write("< effettuare prima il logout".getBytes());
 		}
-
 	}
 
 	public void listUsers() throws IOException {
@@ -61,7 +76,7 @@ public class ClientHandler implements Runnable {
 		}
 
 		Set<String> common_tag_users = new TreeSet<String>();
-		for (User u : users) {
+		for (User u : users.values()) {
 			if (!u.getUsername().equals(user.getUsername())) {
 				for (String tag : user.getTags()) {
 					if (u.getTags().contains(tag)) {
@@ -77,19 +92,11 @@ public class ClientHandler implements Runnable {
 		else {
 			StringBuilder users_list = new StringBuilder("< utenti con tag comuni:\n");
 			for (String username : common_tag_users) {
-				users_list.append("< \t" + username + "\n");
+				users_list.append("\t- " + username + "\n");
 			}
 			users_list.setCharAt(users_list.length() - 1, '\0');
 			writer.write(users_list.toString().getBytes());
 		}
-	}
-
-	public void listFollowers() throws IOException {
-		if (user == null) {
-			writer.write("< effettuare prima il login".getBytes());
-			return;
-		}
-		writer.write("< list followers".getBytes());
 	}
 
 	public void listFollowing() throws IOException {
@@ -100,8 +107,22 @@ public class ClientHandler implements Runnable {
 		writer.write("< list following".getBytes());
 	}
 
+	public void followUser(String username) throws IOException {
+		if (user == null) {
+			writer.write("< effettuare prima il login".getBytes());
+			return;
+		}
+
+		user.follow(username);
+		Notifier u = online_users.get(username);
+		if (u != null)
+			u.newFollower(user.getUsername());
+
+		writer.write(("< ora segui " + username).getBytes());
+	}
+
 	public void logout(String username) throws IOException {
-		for (User u : users) {
+		for (User u : users.values()) {
 			if (username.equals(u.getUsername())) {
 				u.logout();
 				user = null;
@@ -137,10 +158,6 @@ public class ClientHandler implements Runnable {
 									listUsers();
 									break;
 
-								case "followers":
-									listFollowers();
-									break;
-
 								case "following":
 									listFollowing();
 									break;
@@ -152,6 +169,13 @@ public class ClientHandler implements Runnable {
 						} else {
 							writer.write("< invalid command".getBytes());
 						}
+						break;
+
+					case "follow":
+						if (command.length == 2)
+							followUser(command[1]);
+						else
+							writer.write("< invalid command".getBytes());
 						break;
 
 					case "logout":

@@ -5,17 +5,18 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Server extends UnicastRemoteObject implements Registrator {
 
 	// WINSOME core
-	private Set<User> users;
+	private Map<String, User> users;
+	private Map<String, Notifier> online_users;
 
 	// RMI
 	private Registry registry;
@@ -31,7 +32,8 @@ public class Server extends UnicastRemoteObject implements Registrator {
 	public static final int CORE_PORT = 5000;
 
 	public Server() throws RemoteException {
-		users = new TreeSet<User>();
+		users = new HashMap<String, User>();
+		online_users = new HashMap<String, Notifier>();
 		try {
 
 			LocateRegistry.createRegistry(REGISTER_PORT);
@@ -50,7 +52,7 @@ public class Server extends UnicastRemoteObject implements Registrator {
 		try {
 			registry.rebind(Server.NAME, this);
 			for (int i = 0; i < 20; i++)
-				pool.execute(new ClientHandler(server_socket, users));
+				pool.execute(new ClientHandler(server_socket, users, online_users));
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
@@ -65,8 +67,16 @@ public class Server extends UnicastRemoteObject implements Registrator {
 		if (tags.size() == 0)
 			throw new LogException("< inserire almeno un tag");
 
-		if (!users.add(new User(username, password, tags)))
-			throw new LogException("< utente gia' registrato");
+		if (users.get(username) == null)
+			users.put(username, new User(username, password, tags));
+		else
+			throw new LogException("< nome utente non disponobile");
+
+	}
+
+	public void registerForCallback(String username, Notifier client) throws RemoteException {
+		if (!online_users.containsKey(username))
+			online_users.put(username, client);
 	}
 
 	public void shutdown() {
@@ -92,5 +102,4 @@ public class Server extends UnicastRemoteObject implements Registrator {
 		scanner.close();
 		winsome.shutdown();
 	}
-
 }

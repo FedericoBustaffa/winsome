@@ -6,4 +6,6 @@ public interface Registrator extends Remote {
 
 	public void register(String username, String password, List<String> tags) throws RemoteException, LogException;
 
+	public void registerForCallback(String username, Notifier client) throws RemoteException;
+
 }

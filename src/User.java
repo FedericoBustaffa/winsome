@@ -18,6 +18,10 @@ public class User implements Comparable<User> {
 		this.followers = new TreeSet<String>();
 	}
 
+	public User() {
+		this(null, null, null);
+	}
+
 	public String getUsername() {
 		return username;
 	}
@@ -56,6 +60,10 @@ public class User implements Comparable<User> {
 
 	public void unfollow(String username) {
 		followers.remove(username);
+	}
+
+	public Set<String> followers() {
+		return followers;
 	}
 
 	@Override
