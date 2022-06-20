@@ -92,10 +92,12 @@ public class Client extends UnicastRemoteObject implements Notifier {
 
 	public void notifyFollow(String username) throws RemoteException {
 		System.out.println("< " + username + " ha iniziato a seguirti");
+		user.addFollower(username);
 	}
 
 	public void notifyUnfollow(String username) throws RemoteException {
 		System.out.println("< " + username + " ha smesso di seguirti");
+		user.removeFollower(username);
 	}
 
 	// TCP command sender

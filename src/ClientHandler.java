@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -15,9 +16,9 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 
 public class ClientHandler implements Runnable {
 
+	private User user = null;
 	private Map<String, User> users;
 	private Map<String, Notifier> online_users;
-	private User user = null;
 
 	// TCP
 	private ServerSocket server_socket;
@@ -188,6 +189,13 @@ public class ClientHandler implements Runnable {
 							writer.write("< invalid command".getBytes());
 						break;
 
+					case "unfollow":
+						if (command.length == 2)
+							unfollowUser(command[1]);
+						else
+							writer.write("< invalid command".getBytes());
+						break;
+
 					case "logout":
 						if (user == null)
 							writer.write("< effettuare prima il login".getBytes());
@@ -209,6 +217,8 @@ public class ClientHandler implements Runnable {
 				}
 
 			} while (!command[0].equals("exit"));
+		} catch (SocketException e) {
+			// interruzione della accept non gestita
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

@@ -34,13 +34,15 @@ public class Server extends UnicastRemoteObject implements Registrator {
 	public Server() throws RemoteException {
 		users = new HashMap<String, User>();
 		online_users = new HashMap<String, Notifier>();
-		try {
+		pool = Executors.newFixedThreadPool(10);
 
+		try {
 			LocateRegistry.createRegistry(REGISTER_PORT);
 			registry = LocateRegistry.getRegistry(REGISTER_PORT);
 
 			server_socket = new ServerSocket(CORE_PORT);
-			pool = Executors.newFixedThreadPool(10);
+
+			System.out.println("Server attivo");
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -70,7 +72,7 @@ public class Server extends UnicastRemoteObject implements Registrator {
 		if (users.get(username) == null)
 			users.put(username, new User(username, password, tags));
 		else
-			throw new LogException("< nome utente non disponobile");
+			throw new LogException("< nome utente non disponibile");
 
 	}
 
@@ -84,8 +86,10 @@ public class Server extends UnicastRemoteObject implements Registrator {
 			registry.unbind(Server.NAME);
 			UnicastRemoteObject.unexportObject(this, true);
 			server_socket.close();
+			pool.shutdown();
 			while (!pool.isTerminated())
 				;
+			System.out.println("Server chiuso");
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (NotBoundException e) {
@@ -94,8 +98,7 @@ public class Server extends UnicastRemoteObject implements Registrator {
 	}
 
 	public static void main(String[] args) throws RemoteException {
-		Server winsome;
-		winsome = new Server();
+		Server winsome = new Server();
 		winsome.start();
 		Scanner scanner = new Scanner(System.in);
 		scanner.nextLine();
