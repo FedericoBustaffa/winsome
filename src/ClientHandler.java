@@ -20,7 +20,7 @@ public class ClientHandler implements Runnable {
 	private User user = null;
 
 	// TCP
-	private Socket socket;
+	private ServerSocket server_socket;
 	private InputStream reader;
 	private OutputStream writer;
 
@@ -29,21 +29,14 @@ public class ClientHandler implements Runnable {
 	private File user_file;
 
 	public ClientHandler(ServerSocket server_socket, Map<String, User> users, Map<String, Notifier> online_users) {
+		this.server_socket = server_socket;
 		this.users = users;
 		this.online_users = online_users;
-		try {
-			socket = server_socket.accept();
-			reader = socket.getInputStream();
-			writer = socket.getOutputStream();
+		mapper = new ObjectMapper();
+		mapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
+		mapper.enable(SerializationFeature.INDENT_OUTPUT);
 
-			mapper = new ObjectMapper();
-			mapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
-			mapper.enable(SerializationFeature.INDENT_OUTPUT);
-
-			user_file = new File("json_files/user.json");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		user_file = new File("json_files/user.json");
 	}
 
 	public void login(String username, String password) throws IOException {
@@ -113,32 +106,49 @@ public class ClientHandler implements Runnable {
 			return;
 		}
 
-		user.follow(username);
+		users.get(username).addFollower(user.getUsername());
 		Notifier u = online_users.get(username);
 		if (u != null)
-			u.newFollower(user.getUsername());
+			u.notifyFollow(user.getUsername());
 
 		writer.write(("< ora segui " + username).getBytes());
 	}
 
+	public void unfollowUser(String username) throws IOException {
+		if (user == null) {
+			writer.write("< effettuare prima il login".getBytes());
+			return;
+		}
+
+		users.get(username).removeFollower(user.getUsername());
+		Notifier u = online_users.get(username);
+		if (u != null)
+			u.notifyUnfollow(user.getUsername());
+
+		writer.write(("< hai smesso di seguire " + username).getBytes());
+	}
+
 	public void logout(String username) throws IOException {
-		for (User u : users.values()) {
-			if (username.equals(u.getUsername())) {
-				u.logout();
-				user = null;
-				writer.write("< logout effettuato".getBytes());
-				return;
-			}
+		User u = users.get(username);
+		if (u != null) {
+			u.logout();
+			user = null;
+			writer.write("< logout effettuato".getBytes());
+			return;
 		}
 
 		writer.write("< username errato".getBytes());
 	}
 
 	public void run() {
-		String[] command = null;
-		byte[] b = new byte[1024];
-		int bytes;
 		try {
+			Socket socket = server_socket.accept();
+			reader = socket.getInputStream();
+			writer = socket.getOutputStream();
+
+			String[] command = null;
+			byte[] b = new byte[1024];
+			int bytes;
 			do {
 				bytes = reader.read(b);
 				command = new String(b, 0, bytes).split(" ");
@@ -186,10 +196,9 @@ public class ClientHandler implements Runnable {
 						break;
 
 					case "exit":
-						if (user != null) {
-							// se si e' loggati si fa il logout
+						if (user != null)
 							user.logout();
-						}
+
 						writer.write("< terminato".getBytes());
 						socket.close();
 						break;

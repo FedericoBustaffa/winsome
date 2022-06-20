@@ -40,7 +40,7 @@ public class Server extends UnicastRemoteObject implements Registrator {
 			registry = LocateRegistry.getRegistry(REGISTER_PORT);
 
 			server_socket = new ServerSocket(CORE_PORT);
-			pool = Executors.newFixedThreadPool(20);
+			pool = Executors.newFixedThreadPool(10);
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -51,7 +51,7 @@ public class Server extends UnicastRemoteObject implements Registrator {
 	public void start() {
 		try {
 			registry.rebind(Server.NAME, this);
-			for (int i = 0; i < 20; i++)
+			for (int i = 0; i < 10; i++)
 				pool.execute(new ClientHandler(server_socket, users, online_users));
 		} catch (RemoteException e) {
 			e.printStackTrace();
@@ -83,9 +83,9 @@ public class Server extends UnicastRemoteObject implements Registrator {
 		try {
 			registry.unbind(Server.NAME);
 			UnicastRemoteObject.unexportObject(this, true);
+			server_socket.close();
 			while (!pool.isTerminated())
 				;
-			server_socket.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (NotBoundException e) {

@@ -3,8 +3,8 @@ import java.rmi.RemoteException;
 
 public interface Notifier extends Remote {
 
-	public void newFollower(String username) throws RemoteException;
+	public void notifyFollow(String username) throws RemoteException;
 
-	public void unfollow(String username) throws RemoteException;
+	public void notifyUnfollow(String username) throws RemoteException;
 
 }

@@ -1,7 +1,7 @@
 {
-  "username" : "andrea",
-  "password" : "rossi",
+  "username" : "chiara",
+  "password" : "c",
   "tags" : [ "abc" ],
   "logged" : true,
-  "followers" : [ ]
+  "followers" : [ "fede" ]
 }

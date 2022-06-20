@@ -54,11 +54,11 @@ public class User implements Comparable<User> {
 		logged = false;
 	}
 
-	public void follow(String username) {
+	public void addFollower(String username) {
 		followers.add(username);
 	}
 
-	public void unfollow(String username) {
+	public void removeFollower(String username) {
 		followers.remove(username);
 	}
 
