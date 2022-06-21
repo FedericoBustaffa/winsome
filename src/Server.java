@@ -14,9 +14,10 @@ import java.util.concurrent.Executors;
 
 public class Server extends UnicastRemoteObject implements Registrator {
 
-	// WINSOME core
+	// core
 	private Map<String, User> users;
 	private Map<String, Notifier> online_users;
+	private Map<Integer, Post> posts;
 
 	// RMI
 	private Registry registry;
@@ -34,8 +35,9 @@ public class Server extends UnicastRemoteObject implements Registrator {
 	public Server() throws RemoteException {
 		users = new HashMap<String, User>();
 		online_users = new HashMap<String, Notifier>();
-		pool = Executors.newFixedThreadPool(10);
+		posts = new HashMap<Integer, Post>();
 
+		pool = Executors.newFixedThreadPool(10);
 		try {
 			LocateRegistry.createRegistry(REGISTER_PORT);
 			registry = LocateRegistry.getRegistry(REGISTER_PORT);
@@ -54,7 +56,7 @@ public class Server extends UnicastRemoteObject implements Registrator {
 		try {
 			registry.rebind(Server.NAME, this);
 			for (int i = 0; i < 10; i++)
-				pool.execute(new ClientHandler(server_socket, users, online_users));
+				pool.execute(new ClientHandler(server_socket, users, online_users, posts));
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
@@ -79,6 +81,10 @@ public class Server extends UnicastRemoteObject implements Registrator {
 	public void registerForCallback(String username, Notifier client) throws RemoteException {
 		if (!online_users.containsKey(username))
 			online_users.put(username, client);
+	}
+
+	public void unregisterForCallback(String username) throws RemoteException {
+		online_users.remove(username);
 	}
 
 	public void shutdown() {

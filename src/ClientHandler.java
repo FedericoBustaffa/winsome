@@ -19,6 +19,7 @@ public class ClientHandler implements Runnable {
 	private User user = null;
 	private Map<String, User> users;
 	private Map<String, Notifier> online_users;
+	private Map<Integer, Post> posts;
 
 	// TCP
 	private ServerSocket server_socket;
@@ -29,10 +30,12 @@ public class ClientHandler implements Runnable {
 	private ObjectMapper mapper;
 	private File user_file;
 
-	public ClientHandler(ServerSocket server_socket, Map<String, User> users, Map<String, Notifier> online_users) {
+	public ClientHandler(ServerSocket server_socket, Map<String, User> users, Map<String, Notifier> online_users,
+			Map<Integer, Post> posts) {
 		this.server_socket = server_socket;
 		this.users = users;
 		this.online_users = online_users;
+		this.posts = posts;
 		mapper = new ObjectMapper();
 		mapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
 		mapper.enable(SerializationFeature.INDENT_OUTPUT);
@@ -41,23 +44,29 @@ public class ClientHandler implements Runnable {
 	}
 
 	public void login(String username, String password) throws IOException {
-		if (user == null) {
-			user = users.get(username);
-			if (user == null)
+		if (this.user == null) {
+			User u = users.get(username);
+			if (u == null) {
 				writer.write("< registrarsi prima di effettuare il login".getBytes());
-			else if (password.equals(user.getPassword())) {
-				if (!user.isLogged()) {
-					user.login();
-					mapper.writeValue(user_file, user);
+				return;
+			} else if (password.equals(u.getPassword())) {
+				if (!u.isLogged()) {
+					u.login();
+					this.user = u;
+					mapper.writeValue(this.user_file, this.user);
 					writer.write("< login effettuato".getBytes());
+					return;
 				} else {
 					writer.write("< profilo gia' connesso su un altro dispositivo".getBytes());
+					return;
 				}
-			} else
+			} else {
 				writer.write("< password non corretta".getBytes());
+				return;
+			}
 		} else {
 			if (username.equals(user.getUsername()))
-				writer.write("< login gia' effettuato".getBytes());
+				writer.write("< login gia' effettuato con questo profilo".getBytes());
 			else
 				writer.write("< effettuare prima il logout".getBytes());
 		}
@@ -93,26 +102,33 @@ public class ClientHandler implements Runnable {
 		}
 	}
 
-	public void listFollowing() throws IOException {
-		if (user == null) {
-			writer.write("< effettuare prima il login".getBytes());
-			return;
-		}
-		writer.write("< list following".getBytes());
-	}
-
 	public void followUser(String username) throws IOException {
 		if (user == null) {
 			writer.write("< effettuare prima il login".getBytes());
 			return;
 		}
 
-		users.get(username).addFollower(user.getUsername());
-		Notifier u = online_users.get(username);
-		if (u != null)
-			u.notifyFollow(user.getUsername());
+		if (username.equals(user.getUsername())) {
+			writer.write("< non puoi seguire questo utente".getBytes());
+			return;
+		}
 
-		writer.write(("< ora segui " + username).getBytes());
+		User u = users.get(username);
+		if (u != null) {
+			if (u.addFollower(user.getUsername()))
+				writer.write(("< ora segui " + username).getBytes());
+			else {
+				writer.write("< segui gia' questo utente".getBytes());
+				return;
+			}
+		} else {
+			writer.write("< utente non trovato".getBytes());
+			return;
+		}
+
+		Notifier client = online_users.get(username);
+		if (client != null)
+			client.notifyFollow(user.getUsername());
 	}
 
 	public void unfollowUser(String username) throws IOException {
@@ -121,15 +137,140 @@ public class ClientHandler implements Runnable {
 			return;
 		}
 
-		users.get(username).removeFollower(user.getUsername());
-		Notifier u = online_users.get(username);
-		if (u != null)
-			u.notifyUnfollow(user.getUsername());
+		User u = users.get(username);
+		if (u != null) {
+			if (u.removeFollower(user.getUsername()))
+				writer.write(("< hai smesso di seguire " + username).getBytes());
+			else {
+				writer.write("< non segui questo utente".getBytes());
+				return;
+			}
+		} else {
+			writer.write("< utente non trovato".getBytes());
+			return;
+		}
 
-		writer.write(("< hai smesso di seguire " + username).getBytes());
+		Notifier client = online_users.get(username);
+		if (client != null)
+			client.notifyUnfollow(user.getUsername());
+	}
+
+	private boolean parsePost(String[] command) throws IOException {
+		int i = 0, counter = 0;
+		for (i = 0; i < command.length; i++) {
+			if (command[i].startsWith("\""))
+				counter++;
+			if (command[i].endsWith("\""))
+				counter++;
+		}
+		if (counter != 4) {
+			writer.write("< titolo e contenuto devono essere tra virgolette".getBytes());
+			return false;
+		}
+
+		StringBuilder sb = new StringBuilder();
+		i = 1;
+		do {
+			if (command[i].endsWith("\""))
+				sb.append(command[i]);
+			else
+				sb.append(command[i] + " ");
+		} while (!command[i++].endsWith("\""));
+		sb.delete(0, 1);
+		sb.delete(sb.length() - 1, sb.length());
+		String title = sb.toString();
+
+		sb.delete(0, sb.length());
+		do {
+			if (command[i].endsWith("\""))
+				sb.append(command[i]);
+			else
+				sb.append(command[i] + " ");
+		} while (!command[i++].endsWith("\""));
+		sb.delete(0, 1);
+		sb.delete(sb.length() - 1, sb.length());
+		String content = sb.toString();
+
+		command[0] = title;
+		command[1] = content;
+
+		return true;
+	}
+
+	public void createPost(String title, String content) throws IOException {
+		if (user == null) {
+			writer.write("< effettuare prima il login".getBytes());
+			return;
+		}
+
+		if (title.length() > 20) {
+			writer.write("< titolo troppo lungo (max 20 caratteri)".getBytes());
+			return;
+		}
+
+		if (content.length() > 500) {
+			writer.write("< testo troppo lungo (max 500 caratteri)".getBytes());
+			return;
+		}
+
+		Post p = new Post(title, content, user.getUsername());
+		posts.put(p.id(), p);
+
+		writer.write(("< post pubblicato (" + p.id() + ")").getBytes());
+	}
+
+	public void showPost(int id) throws IOException {
+		Post post = posts.get(id);
+		String output = "< titolo: " + post.title() + "\n";
+		output = output + "< contenuto: " + post.content() + "\n";
+		output = output + "< voti: " + post.getUpVotes() + " positivi, " + post.getDownVotes() + " negativi\n";
+		if (post.comments().size() == 0)
+			output = output + "< commenti: nessun commento";
+		else {
+			for (String c : post.comments())
+				output = output + "\t- " + c + "\n";
+		}
+	}
+
+	public void viewBlog() throws IOException {
+		if (user == null) {
+			writer.write("< effettuare prima il login".getBytes());
+			return;
+		}
+
+		String output = "";
+		for (Integer id : posts.keySet()) {
+			Post post = posts.get(id);
+			if (user.getUsername().equals(post.author())) {
+				output = output + "< titolo: " + post.title() + "\n";
+				output = output + "< contenuto: " + post.content() + "\n";
+				output = output + "< voti: " + post.getUpVotes() + " positivi, " + post.getDownVotes() + " negativi\n";
+				if (post.comments().size() == 0)
+					output = output + "< commenti: nessun commento\n";
+				else {
+					for (String c : post.comments())
+						output = output + "\t- " + c + "\n";
+				}
+				output = output + "< ******\n";
+			}
+		}
+		output = output.substring(0, output.length() - 1); // togle l'ultimo \n
+		writer.write(output.getBytes());
+	}
+
+	public void showFeed() throws IOException {
+		if (user == null) {
+			writer.write("< effettuare prima il login".getBytes());
+			return;
+		}
 	}
 
 	public void logout(String username) throws IOException {
+		if (user == null) {
+			writer.write("< effettuare prima il login".getBytes());
+			return;
+		}
+
 		User u = users.get(username);
 		if (u != null) {
 			u.logout();
@@ -138,7 +279,16 @@ public class ClientHandler implements Runnable {
 			return;
 		}
 
-		writer.write("< username errato".getBytes());
+		writer.write("< nome utente errato".getBytes());
+	}
+
+	public void exit() throws IOException {
+		if (user != null) {
+			user.logout();
+			user = null;
+		}
+
+		writer.write("< terminato".getBytes());
 	}
 
 	public void run() {
@@ -163,52 +313,52 @@ public class ClientHandler implements Runnable {
 						break;
 
 					case "list":
-						if (command.length == 2) {
-							switch (command[1]) {
-								case "users":
-									listUsers();
-									break;
-
-								case "following":
-									listFollowing();
-									break;
-
-								default:
-									writer.write("< invalid command".getBytes());
-									break;
-							}
-						} else {
+						if (command[1].equals("users") && command.length == 2)
+							listUsers();
+						else if (command[1].equals("users") && command.length > 2)
+							writer.write("< USAGE: list users".getBytes());
+						else
 							writer.write("< invalid command".getBytes());
-						}
 						break;
 
 					case "follow":
 						if (command.length == 2)
 							followUser(command[1]);
 						else
-							writer.write("< invalid command".getBytes());
+							writer.write("< USAGE: follow <username>".getBytes());
 						break;
 
 					case "unfollow":
 						if (command.length == 2)
 							unfollowUser(command[1]);
 						else
-							writer.write("< invalid command".getBytes());
+							writer.write("< USAGE: unfollow <username>".getBytes());
+						break;
+
+					case "post":
+						if (parsePost(command))
+							createPost(command[0], command[1]);
+						break;
+
+					case "blog":
+						viewBlog();
+						break;
+
+					case "show":
 						break;
 
 					case "logout":
-						if (user == null)
-							writer.write("< effettuare prima il login".getBytes());
+						if (command.length != 1)
+							writer.write("< USAGE: logout".getBytes());
 						else
 							logout(user.getUsername());
 						break;
 
 					case "exit":
-						if (user != null)
-							user.logout();
-
-						writer.write("< terminato".getBytes());
-						socket.close();
+						if (command.length != 1)
+							writer.write("< USAGE: exit".getBytes());
+						else
+							exit();
 						break;
 
 					default:

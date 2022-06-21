@@ -8,4 +8,6 @@ public interface Registrator extends Remote {
 
 	public void registerForCallback(String username, Notifier client) throws RemoteException;
 
+	public void unregisterForCallback(String username) throws RemoteException;
+
 }

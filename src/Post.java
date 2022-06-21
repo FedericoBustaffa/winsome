@@ -40,7 +40,7 @@ public class Post {
 		return author;
 	}
 
-	public int getUpVote() {
+	public int getUpVotes() {
 		return up_vote;
 	}
 
@@ -48,7 +48,7 @@ public class Post {
 		up_vote++;
 	}
 
-	public int getDownVote() {
+	public int getDownVotes() {
 		return down_vote;
 	}
 
@@ -60,4 +60,7 @@ public class Post {
 		return comments;
 	}
 
+	public void addComment(String comment) {
+		comments.add(comment);
+	}
 }

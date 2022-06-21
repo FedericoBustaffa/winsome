@@ -50,7 +50,6 @@ public class Client extends UnicastRemoteObject implements Notifier {
 		user_file = new File("json_files/user.json");
 	}
 
-	// registrator
 	public void register(String[] command) {
 		try {
 			if (command.length < 3) {
@@ -90,26 +89,46 @@ public class Client extends UnicastRemoteObject implements Notifier {
 		}
 	}
 
+	public void listFollowing() {
+		if (user == null) {
+			System.out.println("< effettuare prima il login");
+			return;
+		}
+
+		if (user.following().size() == 0) {
+			System.out.println("< non segui nessun utente");
+			return;
+		}
+
+		System.out.println("< seguiti:");
+		for (String f : user.following()) {
+			System.out.println("\t- " + f);
+		}
+	}
+
 	public void notifyFollow(String username) throws RemoteException {
-		System.out.println("< " + username + " ha iniziato a seguirti");
+		System.out.print("\r< " + username + " ha iniziato a seguirti\n> ");
 		user.addFollower(username);
 	}
 
 	public void notifyUnfollow(String username) throws RemoteException {
-		System.out.println("< " + username + " ha smesso di seguirti");
+		System.out.print("\r< " + username + " ha smesso di seguirti\n> ");
 		user.removeFollower(username);
 	}
 
-	// TCP command sender
 	public void handle(String command) {
 		switch (command) {
-			// client handler
+			// client handled
 			case "list followers":
 				this.listFollowers();
 				break;
 
+			case "list following":
+				this.listFollowing();
+				break;
+
+			// server handled
 			default:
-				// server handler
 				try {
 					String response;
 					byte[] b = new byte[1024];
@@ -121,8 +140,10 @@ public class Client extends UnicastRemoteObject implements Notifier {
 					if (response.equals("< login effettuato")) {
 						user = mapper.readValue(user_file, User.class);
 						registrator.registerForCallback(user.getUsername(), this);
-					} else if (response.equals("< logout effettuato"))
+					} else if (response.equals("< logout effettuato") || response.equals("< terminato")) {
+						registrator.unregisterForCallback(user.getUsername());
 						user = null;
+					}
 
 					System.out.println(response);
 				} catch (IOException e) {

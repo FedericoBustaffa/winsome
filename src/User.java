@@ -9,6 +9,7 @@ public class User implements Comparable<User> {
 	private List<String> tags;
 	private boolean logged;
 	private Set<String> followers;
+	private Set<String> following;
 
 	public User(String username, String password, List<String> tags) {
 		this.username = username;
@@ -54,16 +55,28 @@ public class User implements Comparable<User> {
 		logged = false;
 	}
 
-	public void addFollower(String username) {
-		followers.add(username);
+	public boolean addFollower(String username) {
+		return followers.add(username);
 	}
 
-	public void removeFollower(String username) {
-		followers.remove(username);
+	public boolean removeFollower(String username) {
+		return followers.remove(username);
 	}
 
 	public Set<String> followers() {
 		return followers;
+	}
+
+	public boolean follow(String username) {
+		return following.add(username);
+	}
+
+	public boolean unfollow(String username) {
+		return following.add(username);
+	}
+
+	public Set<String> following() {
+		return following;
 	}
 
 	@Override

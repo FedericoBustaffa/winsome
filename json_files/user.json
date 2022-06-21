@@ -1,7 +1,8 @@
 {
-  "username" : "andre",
-  "password" : "a",
-  "tags" : [ "b" ],
+  "username" : "fede",
+  "password" : "f3d3",
+  "tags" : [ "ca" ],
   "logged" : true,
-  "followers" : [ ]
+  "followers" : [ ],
+  "following" : null
 }
