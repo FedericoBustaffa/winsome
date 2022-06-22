@@ -89,23 +89,6 @@ public class Client extends UnicastRemoteObject implements Notifier {
 		}
 	}
 
-	public void listFollowing() {
-		if (user == null) {
-			System.out.println("< effettuare prima il login");
-			return;
-		}
-
-		if (user.following().size() == 0) {
-			System.out.println("< non segui nessun utente");
-			return;
-		}
-
-		System.out.println("< seguiti:");
-		for (String f : user.following()) {
-			System.out.println("\t- " + f);
-		}
-	}
-
 	public void notifyFollow(String username) throws RemoteException {
 		System.out.print("\r< " + username + " ha iniziato a seguirti\n> ");
 		user.addFollower(username);
@@ -121,10 +104,6 @@ public class Client extends UnicastRemoteObject implements Notifier {
 			// client handled
 			case "list followers":
 				this.listFollowers();
-				break;
-
-			case "list following":
-				this.listFollowing();
 				break;
 
 			// server handled

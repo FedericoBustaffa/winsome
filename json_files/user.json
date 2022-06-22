@@ -1,8 +1,9 @@
 {
-  "username" : "fede",
-  "password" : "f3d3",
-  "tags" : [ "ca" ],
+  "username" : "b",
+  "password" : "b",
+  "tags" : [ "b" ],
   "logged" : true,
   "followers" : [ ],
-  "following" : null
+  "following" : [ ],
+  "posts" : [ ]
 }

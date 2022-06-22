@@ -115,9 +115,10 @@ public class ClientHandler implements Runnable {
 
 		User u = users.get(username);
 		if (u != null) {
-			if (u.addFollower(user.getUsername()))
+			if (u.addFollower(user.getUsername())) {
+				user.follow(username);
 				writer.write(("< ora segui " + username).getBytes());
-			else {
+			} else {
 				writer.write("< segui gia' questo utente".getBytes());
 				return;
 			}
@@ -139,9 +140,10 @@ public class ClientHandler implements Runnable {
 
 		User u = users.get(username);
 		if (u != null) {
-			if (u.removeFollower(user.getUsername()))
+			if (u.removeFollower(user.getUsername())) {
+				user.unfollow(username);
 				writer.write(("< hai smesso di seguire " + username).getBytes());
-			else {
+			} else {
 				writer.write("< non segui questo utente".getBytes());
 				return;
 			}
@@ -153,6 +155,24 @@ public class ClientHandler implements Runnable {
 		Notifier client = online_users.get(username);
 		if (client != null)
 			client.notifyUnfollow(user.getUsername());
+	}
+
+	public void listFollowing() throws IOException {
+		if (user == null) {
+			writer.write("< effettuare prima il login".getBytes());
+			return;
+		}
+
+		if (user.following().size() == 0) {
+			writer.write("< non segui nessuno al momento".getBytes());
+			return;
+		}
+
+		String output = "seguiti:\n";
+		for (String f : user.following())
+			output = output + ("\t- " + f);
+
+		writer.write(output.getBytes());
 	}
 
 	private boolean parsePost(String[] command) throws IOException {
@@ -215,12 +235,23 @@ public class ClientHandler implements Runnable {
 
 		Post p = new Post(title, content, user.getUsername());
 		posts.put(p.id(), p);
+		user.addPost(p.id());
 
 		writer.write(("< post pubblicato (" + p.id() + ")").getBytes());
 	}
 
 	public void showPost(int id) throws IOException {
+		if (user == null) {
+			writer.write("< effettuare prima il login".getBytes());
+			return;
+		}
+
 		Post post = posts.get(id);
+		if (post == null) {
+			writer.write("< post inesistente".getBytes());
+			return;
+		}
+
 		String output = "< titolo: " + post.title() + "\n";
 		output = output + "< contenuto: " + post.content() + "\n";
 		output = output + "< voti: " + post.getUpVotes() + " positivi, " + post.getDownVotes() + " negativi\n";
@@ -230,6 +261,56 @@ public class ClientHandler implements Runnable {
 			for (String c : post.comments())
 				output = output + "\t- " + c + "\n";
 		}
+
+		writer.write(output.getBytes());
+	}
+
+	public void deletePost(int id) throws IOException {
+		if (user == null) {
+			writer.write("< effettuare prima il login".getBytes());
+			return;
+		}
+
+		Post post = posts.get(id);
+		if (post == null) {
+			writer.write("< post inesistente".getBytes());
+			return;
+		}
+
+		if (post.author().equals(user.getUsername())) {
+			posts.remove(id);
+			user.removePost(id);
+
+			// rimozione dei rewin se presenti
+			for (User u : users.values())
+				u.removePost(id);
+
+			writer.write(("< post " + id + " cancellato").getBytes());
+		} else
+			writer.write("< non sei l'autore di questo post".getBytes());
+	}
+
+	public void rewinPost(int id) throws IOException {
+		if (user == null) {
+			writer.write("< effettuare prima il login".getBytes());
+			return;
+		}
+
+		Post post = posts.get(id);
+		if (post == null) {
+			writer.write("< post inesistente".getBytes());
+			return;
+		}
+
+		if (user.getUsername().equals(post.author())) {
+			writer.write("sei l'autore di questo post".getBytes());
+			return;
+		}
+
+		if (user.addPost(id))
+			writer.write(("< rewin post " + id).getBytes());
+		else
+			writer.write("< hai gia' fatto il rewin di questo post".getBytes());
 	}
 
 	public void viewBlog() throws IOException {
@@ -263,6 +344,35 @@ public class ClientHandler implements Runnable {
 			writer.write("< effettuare prima il login".getBytes());
 			return;
 		}
+
+		if (user.following().size() == 0) {
+			writer.write("< non segui ancora nessuno".getBytes());
+			return;
+		}
+
+		String output = "";
+		Post post;
+		for (String f : user.following()) {
+			for (Integer id : users.get(f).getPosts()) {
+				post = posts.get(id);
+				output = output + "< titolo: " + post.title() + "\n";
+				output = output + "< contenuto: " + post.content() + "\n";
+				output = output + "< voti: " + post.getUpVotes() + " positivi, " + post.getDownVotes() + " negativi\n";
+				if (post.comments().size() == 0)
+					output = output + "< commenti: nessun commento\n";
+				else {
+					for (String c : post.comments())
+						output = output + "\t- " + c + "\n";
+				}
+				output = output + "< ******\n";
+			}
+		}
+		output = output.substring(0, output.length() - 1);
+
+		if (!output.isBlank())
+			writer.write(output.getBytes());
+		else
+			writer.write("< feed vuoto".getBytes());
 	}
 
 	public void logout(String username) throws IOException {
@@ -313,11 +423,19 @@ public class ClientHandler implements Runnable {
 						break;
 
 					case "list":
-						if (command[1].equals("users") && command.length == 2)
-							listUsers();
-						else if (command[1].equals("users") && command.length > 2)
-							writer.write("< USAGE: list users".getBytes());
-						else
+						if (command.length == 2) {
+							if (command[1].equals("users"))
+								listUsers();
+							else if (command[1].equals("following"))
+								listFollowing();
+						} else if (command.length > 2) {
+							if (command[1].equals("users"))
+								writer.write("< USAGE: list users".getBytes());
+							else if (command[1].equals("following"))
+								writer.write("< USAGE: list following".getBytes());
+							else
+								writer.write("< invalid command".getBytes());
+						} else
 							writer.write("< invalid command".getBytes());
 						break;
 
@@ -345,6 +463,35 @@ public class ClientHandler implements Runnable {
 						break;
 
 					case "show":
+						if (command.length >= 2) {
+							if (command[1].equals("post")) {
+								if (command.length == 3)
+									showPost(Integer.parseInt(command[2]));
+								else
+									writer.write("< USAGE: show post <id>".getBytes());
+							} else if (command[1].equals("feed")) {
+								if (command.length == 2)
+									showFeed();
+								else
+									writer.write("< USAGE: show feed".getBytes());
+							} else
+								writer.write("< invalid command".getBytes());
+						} else
+							writer.write("< invalid command".getBytes());
+						break;
+
+					case "delete":
+						if (command.length == 2)
+							deletePost(Integer.parseInt(command[1]));
+						else
+							writer.write("< USAGE: delete <id>".getBytes());
+						break;
+
+					case "rewin":
+						if (command.length == 2)
+							rewinPost(Integer.parseInt(command[1]));
+						else
+							writer.write("< USAGE: rewin <id>".getBytes());
 						break;
 
 					case "logout":
@@ -367,7 +514,9 @@ public class ClientHandler implements Runnable {
 				}
 
 			} while (!command[0].equals("exit"));
-		} catch (SocketException e) {
+		} catch (
+
+		SocketException e) {
 			// interruzione della accept non gestita
 		} catch (IOException e) {
 			e.printStackTrace();

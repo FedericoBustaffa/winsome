@@ -10,6 +10,7 @@ public class User implements Comparable<User> {
 	private boolean logged;
 	private Set<String> followers;
 	private Set<String> following;
+	private Set<Integer> posts;
 
 	public User(String username, String password, List<String> tags) {
 		this.username = username;
@@ -17,6 +18,8 @@ public class User implements Comparable<User> {
 		this.tags = tags;
 		this.logged = false;
 		this.followers = new TreeSet<String>();
+		this.following = new TreeSet<String>();
+		this.posts = new TreeSet<Integer>();
 	}
 
 	public User() {
@@ -72,11 +75,23 @@ public class User implements Comparable<User> {
 	}
 
 	public boolean unfollow(String username) {
-		return following.add(username);
+		return following.remove(username);
 	}
 
 	public Set<String> following() {
 		return following;
+	}
+
+	public boolean addPost(int id) {
+		return posts.add(id);
+	}
+
+	public boolean removePost(int id) {
+		return posts.remove(id);
+	}
+
+	public Set<Integer> getPosts() {
+		return posts;
 	}
 
 	@Override
