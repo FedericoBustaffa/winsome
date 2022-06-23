@@ -175,7 +175,7 @@ public class ClientHandler implements Runnable {
 		writer.write(output.getBytes());
 	}
 
-	private boolean parsePost(String[] command) throws IOException {
+	private boolean parsePost(String[] command) {
 		int i = 0, counter = 0;
 		for (i = 0; i < command.length; i++) {
 			if (command[i].startsWith("\""))
@@ -183,10 +183,8 @@ public class ClientHandler implements Runnable {
 			if (command[i].endsWith("\""))
 				counter++;
 		}
-		if (counter != 4) {
-			writer.write("< titolo e contenuto devono essere tra virgolette".getBytes());
+		if (counter != 4)
 			return false;
-		}
 
 		StringBuilder sb = new StringBuilder();
 		i = 1;
@@ -254,11 +252,13 @@ public class ClientHandler implements Runnable {
 
 		String output = "< titolo: " + post.title() + "\n";
 		output = output + "< contenuto: " + post.content() + "\n";
-		output = output + "< voti: " + post.getUpVotes() + " positivi, " + post.getDownVotes() + " negativi\n";
+		output = output + "< voti: " + post.getUpVotes().size() + " positivi, " + post.getDownVotes().size()
+				+ " negativi\n";
 		if (post.comments().size() == 0)
 			output = output + "< commenti: nessun commento";
 		else {
-			for (String c : post.comments())
+			output = output + "< commenti:\n";
+			for (String c : post.comments().values())
 				output = output + "\t- " + c + "\n";
 		}
 
@@ -303,7 +303,7 @@ public class ClientHandler implements Runnable {
 		}
 
 		if (user.getUsername().equals(post.author())) {
-			writer.write("sei l'autore di questo post".getBytes());
+			writer.write("< sei l'autore di questo post".getBytes());
 			return;
 		}
 
@@ -319,21 +319,27 @@ public class ClientHandler implements Runnable {
 			return;
 		}
 
+		if (user.getPosts().size() == 0) {
+			writer.write("< non hai pubblicato ancora niente".getBytes());
+			return;
+		}
+
 		String output = "";
-		for (Integer id : posts.keySet()) {
+		for (Integer id : user.getPosts()) {
 			Post post = posts.get(id);
-			if (user.getUsername().equals(post.author())) {
-				output = output + "< titolo: " + post.title() + "\n";
-				output = output + "< contenuto: " + post.content() + "\n";
-				output = output + "< voti: " + post.getUpVotes() + " positivi, " + post.getDownVotes() + " negativi\n";
-				if (post.comments().size() == 0)
-					output = output + "< commenti: nessun commento\n";
-				else {
-					for (String c : post.comments())
-						output = output + "\t- " + c + "\n";
-				}
-				output = output + "< ******\n";
+			output = output + "< titolo: " + post.title() + "\n";
+			output = output + "< contenuto: " + post.content() + "\n";
+			output = output + "< voti: " + post.getUpVotes().size() + " positivi, " + post.getDownVotes().size()
+					+ " negativi\n";
+			if (post.comments().size() == 0)
+				output = output + "< commenti: nessun commento\n";
+			else {
+				output = output + "< commenti:\n";
+				for (String c : post.comments().values())
+					output = output + "\t- " + c + "\n";
 			}
+			output = output + "< ******\n";
+
 		}
 		output = output.substring(0, output.length() - 1); // togle l'ultimo \n
 		writer.write(output.getBytes());
@@ -357,22 +363,118 @@ public class ClientHandler implements Runnable {
 				post = posts.get(id);
 				output = output + "< titolo: " + post.title() + "\n";
 				output = output + "< contenuto: " + post.content() + "\n";
-				output = output + "< voti: " + post.getUpVotes() + " positivi, " + post.getDownVotes() + " negativi\n";
+				output = output + "< voti: " + post.getUpVotes().size() + " positivi, " + post.getDownVotes().size()
+						+ " negativi\n";
 				if (post.comments().size() == 0)
 					output = output + "< commenti: nessun commento\n";
 				else {
-					for (String c : post.comments())
+					output = output + "< commenti:\n";
+					for (String c : post.comments().values())
 						output = output + "\t- " + c + "\n";
 				}
 				output = output + "< ******\n";
 			}
 		}
-		output = output.substring(0, output.length() - 1);
 
-		if (!output.isBlank())
+		if (!output.isBlank()) {
+			output = output.substring(0, output.length() - 1);
 			writer.write(output.getBytes());
-		else
+		} else
 			writer.write("< feed vuoto".getBytes());
+	}
+
+	public void ratePost(int id, int vote) throws IOException {
+		if (user == null) {
+			writer.write("< effettuare prima il login".getBytes());
+			return;
+		}
+
+		Post post = posts.get(id);
+		if (post == null) {
+			writer.write("< post inesistente".getBytes());
+			return;
+		}
+
+		if (post.author().equals(user.getUsername())) {
+			writer.write("< sei l'autore del post".getBytes());
+			return;
+		}
+
+		if (vote != 1 && vote != -1) {
+			writer.write("< voto non valido (-1 o 1)".getBytes());
+			return;
+		}
+
+		for (String u : user.following()) {
+			for (Integer p : users.get(u).getPosts()) {
+				if (p == id) {
+					if (posts.get(id).rate(user.getUsername(), vote))
+						writer.write(("< hai votato " + vote + " il post " + id).getBytes());
+					else
+						writer.write("< hai gia' votato questo post".getBytes());
+
+					return;
+				}
+			}
+		}
+
+		writer.write("< post non presente nel tuo feed".getBytes());
+	}
+
+	public boolean parseComment(String[] command) {
+		int i = 0, counter = 0;
+		for (i = 2; i < command.length; i++) {
+			if (command[i].startsWith("\""))
+				counter++;
+			if (command[i].endsWith("\""))
+				counter++;
+		}
+		if (counter != 2)
+			return false;
+
+		StringBuilder sb = new StringBuilder();
+		i = 2;
+		do {
+			if (command[i].endsWith("\""))
+				sb.append(command[i]);
+			else
+				sb.append(command[i] + " ");
+		} while (!command[i++].endsWith("\""));
+		sb.delete(0, 1);
+		sb.delete(sb.length() - 1, sb.length());
+		command[2] = sb.toString();
+
+		return true;
+	}
+
+	public void addComment(int id, String comment) throws IOException {
+		if (user == null) {
+			writer.write("< effettuare prima il login".getBytes());
+			return;
+		}
+
+		Post post = posts.get(id);
+		if (post == null) {
+			writer.write("< post inesistente".getBytes());
+			return;
+		}
+
+		if (post.author().equals(user.getUsername())) {
+			writer.write("< sei l'autore del post".getBytes());
+			return;
+		}
+
+		for (String u : user.following()) {
+			for (Integer p : users.get(u).getPosts()) {
+				if (p == id) {
+					posts.get(id).comment(user.getUsername(), comment);
+					writer.write(("< post " + id + " commentato").getBytes());
+					return;
+				}
+			}
+		}
+
+		writer.write("< post non presente nel tuo feed".getBytes());
 	}
 
 	public void logout(String username) throws IOException {
@@ -428,6 +530,8 @@ public class ClientHandler implements Runnable {
 								listUsers();
 							else if (command[1].equals("following"))
 								listFollowing();
+							else
+								writer.write("< invalid command".getBytes());
 						} else if (command.length > 2) {
 							if (command[1].equals("users"))
 								writer.write("< USAGE: list users".getBytes());
@@ -456,6 +560,8 @@ public class ClientHandler implements Runnable {
 					case "post":
 						if (parsePost(command))
 							createPost(command[0], command[1]);
+						else
+							writer.write("< titolo e contenuto devono essere tra virgolette".getBytes());
 						break;
 
 					case "blog":
@@ -492,6 +598,23 @@ public class ClientHandler implements Runnable {
 							rewinPost(Integer.parseInt(command[1]));
 						else
 							writer.write("< USAGE: rewin <id>".getBytes());
+						break;
+
+					case "rate":
+						if (command.length == 3)
+							ratePost(Integer.parseInt(command[1]), Integer.parseInt(command[2]));
+						else
+							writer.write("< USAGE: rate <id> <vote>".getBytes());
+						break;
+
+					case "comment":
+						if (command.length >= 3) {
+							if (parseComment(command))
+								addComment(Integer.parseInt(command[1]), command[2]);
+							else
+								writer.write("< titolo e contenuto devono essere tra virgolette".getBytes());
+						} else
+							writer.write("< USAGE: comment <id> <comment>".getBytes());
 						break;
 
 					case "logout":

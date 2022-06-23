@@ -1,5 +1,6 @@
-import java.util.List;
-import java.util.Vector;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class Post {
 
@@ -7,9 +8,8 @@ public class Post {
 	private String title;
 	private String content;
 	private String author;
-	private int up_vote;
-	private int down_vote;
-	private List<String> comments;
+	private Map<String, Integer> votes;
+	private Map<String, String> comments;
 
 	private static int id_count = 0;
 
@@ -19,9 +19,8 @@ public class Post {
 		this.title = title;
 		this.content = content;
 		this.author = author;
-		this.up_vote = 0;
-		this.down_vote = 0;
-		this.comments = new Vector<String>();
+		this.votes = new HashMap<String, Integer>();
+		this.comments = new LinkedHashMap<String, String>();
 	}
 
 	public int id() {
@@ -40,27 +39,37 @@ public class Post {
 		return author;
 	}
 
-	public int getUpVotes() {
-		return up_vote;
+	public boolean rate(String user, int vote) {
+		if (!votes.keySet().contains(user)) {
+			votes.put(user, vote);
+			return true;
+		} else
+			return false;
 	}
 
-	public void upVote() {
-		up_vote++;
+	public Map<String, Integer> getUpVotes() {
+		Map<String, Integer> up_votes = new HashMap<String, Integer>();
+		for (String user : votes.keySet()) {
+			if (votes.get(user) > 0)
+				up_votes.put(user, 1);
+		}
+		return up_votes;
 	}
 
-	public int getDownVotes() {
-		return down_vote;
+	public Map<String, Integer> getDownVotes() {
+		Map<String, Integer> down_votes = new HashMap<String, Integer>();
+		for (String user : votes.keySet()) {
+			if (votes.get(user) < 0)
+				down_votes.put(user, -1);
+		}
+		return down_votes;
 	}
 
-	public void downVote() {
-		down_vote++;
+	public void comment(String user, String comment) {
+		comments.put(user, comment);
 	}
 
-	public List<String> comments() {
+	public Map<String, String> comments() {
 		return comments;
-	}
-
-	public void addComment(String comment) {
-		comments.add(comment);
 	}
 }
