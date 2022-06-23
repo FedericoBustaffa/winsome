@@ -1,4 +1,7 @@
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -35,11 +38,72 @@ public class Client extends UnicastRemoteObject implements Notifier {
 	private ObjectMapper mapper;
 	private File user_file;
 
+	// configurazione
+	private static String HOST;
+	private static String MULTICAST;
+	private static String REG_HOST;
+	private static int REG_PORT;
+	private static int TCP_PORT;
+	private static int UDP_PORT;
+	private static int MC_PORT;
+	private static int TIMEOUT;
+
 	public Client() throws ConnectException, RemoteException, NotBoundException, UnknownHostException, IOException {
-		Registry registry = LocateRegistry.getRegistry(Server.REGISTER_PORT);
+		try (BufferedReader config = new BufferedReader(new FileReader("files/config.md"))) {
+			String line;
+			String[] values;
+			while ((line = config.readLine()) != null) {
+				if (!line.startsWith("#") && !line.isBlank()) {
+					values = line.split("=");
+					switch (values[0]) {
+						case "SERVER":
+							HOST = values[1];
+							break;
+
+						case "MULTICAST":
+							MULTICAST = values[1];
+							break;
+
+						case "REGHOST":
+							REG_HOST = values[1];
+							break;
+
+						case "REGPORT":
+							REG_PORT = Integer.parseInt(values[1]);
+							break;
+
+						case "TCPPORT":
+							TCP_PORT = Integer.parseInt(values[1]);
+							break;
+
+						case "UDPPORT":
+							UDP_PORT = Integer.parseInt(values[1]);
+							break;
+
+						case "MCPORT":
+							MC_PORT = Integer.parseInt(values[1]);
+							break;
+
+						case "TIMEOUT":
+							TIMEOUT = Integer.parseInt(values[1]);
+							break;
+
+						default:
+							break;
+					}
+				}
+			}
+
+		} catch (FileNotFoundException e) {
+			System.out.println("file di configurazione non trovato");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		Registry registry = LocateRegistry.getRegistry(REG_PORT);
 		registrator = (Registrator) registry.lookup(Server.NAME);
 
-		socket = new Socket(Server.IP, Server.CORE_PORT);
+		socket = new Socket(HOST, TCP_PORT);
 		reader = socket.getInputStream();
 		writer = socket.getOutputStream();
 
@@ -47,7 +111,7 @@ public class Client extends UnicastRemoteObject implements Notifier {
 		mapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
 		mapper.enable(SerializationFeature.INDENT_OUTPUT);
 
-		user_file = new File("json_files/user.json");
+		user_file = new File("files/user.json");
 	}
 
 	public void register(String[] command) {
@@ -120,8 +184,10 @@ public class Client extends UnicastRemoteObject implements Notifier {
 						user = mapper.readValue(user_file, User.class);
 						registrator.registerForCallback(user.getUsername(), this);
 					} else if (response.equals("< logout effettuato") || response.equals("< terminato")) {
-						registrator.unregisterForCallback(user.getUsername());
-						user = null;
+						if (user != null) {
+							registrator.unregisterForCallback(user.getUsername());
+							user = null;
+						}
 					}
 
 					System.out.println(response);
@@ -151,13 +217,13 @@ public class Client extends UnicastRemoteObject implements Notifier {
 			scanner.close();
 			UnicastRemoteObject.unexportObject(client, true);
 		} catch (ConnectException e) {
-			System.out.println("nessun servizio sulla porta " + Server.REGISTER_PORT);
+			System.out.println("C nessun servizio sulla porta " + REG_PORT);
 			return;
 		} catch (RemoteException e) {
 			e.printStackTrace();
 			return;
 		} catch (NotBoundException e) {
-			System.out.println("nessun servizio sulla porta " + Server.CORE_PORT);
+			System.out.println("NB nessun servizio sulla porta " + TCP_PORT);
 			return;
 		} catch (UnknownHostException e) {
 			System.out.println("host sconosciuto");

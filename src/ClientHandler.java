@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -40,7 +41,7 @@ public class ClientHandler implements Runnable {
 		mapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
 		mapper.enable(SerializationFeature.INDENT_OUTPUT);
 
-		user_file = new File("json_files/user.json");
+		user_file = new File("files/user.json");
 	}
 
 	public void login(String username, String password) throws IOException {
@@ -258,8 +259,10 @@ public class ClientHandler implements Runnable {
 			output = output + "< commenti: nessun commento";
 		else {
 			output = output + "< commenti:\n";
-			for (String c : post.comments().values())
-				output = output + "\t- " + c + "\n";
+			for (List<String> comment_list : post.comments().values()) {
+				for (String c : comment_list)
+					output = output + "\t- " + c + "\n";
+			}
 		}
 
 		writer.write(output.getBytes());
@@ -335,8 +338,10 @@ public class ClientHandler implements Runnable {
 				output = output + "< commenti: nessun commento\n";
 			else {
 				output = output + "< commenti:\n";
-				for (String c : post.comments().values())
-					output = output + "\t- " + c + "\n";
+				for (List<String> comment_list : post.comments().values()) {
+					for (String c : comment_list)
+						output = output + "\t- " + c + "\n";
+				}
 			}
 			output = output + "< ******\n";
 
@@ -369,8 +374,10 @@ public class ClientHandler implements Runnable {
 					output = output + "< commenti: nessun commento\n";
 				else {
 					output = output + "< commenti:\n";
-					for (String c : post.comments().values())
-						output = output + "\t- " + c + "\n";
+					for (List<String> comment_list : post.comments().values()) {
+						for (String c : comment_list)
+							output = output + "\t- " + c + "\n";
+					}
 				}
 				output = output + "< ******\n";
 			}

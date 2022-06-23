@@ -1,3 +1,6 @@
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.rmi.NotBoundException;
@@ -28,27 +31,83 @@ public class Server extends UnicastRemoteObject implements Registrator {
 
 	// server settings
 	public static final String NAME = "WINSOME";
-	public static final String IP = "192.168.1.21";
-	public static final int REGISTER_PORT = 4000;
-	public static final int CORE_PORT = 5000;
+	private static String HOST;
+	private static String MULTICAST;
+	private static String REG_HOST;
+	private static int REG_PORT;
+	private static int TCP_PORT;
+	private static int UDP_PORT;
+	private static int MC_PORT;
+	private static int TIMEOUT;
 
 	public Server() throws RemoteException {
+		try (BufferedReader config = new BufferedReader(new FileReader("files/config.md"))) {
+			String line;
+			String[] values;
+			while ((line = config.readLine()) != null) {
+				if (!line.startsWith("#") && !line.isBlank()) {
+					values = line.split("=");
+					switch (values[0]) {
+						case "SERVER":
+							HOST = values[1];
+							break;
+
+						case "MULTICAST":
+							MULTICAST = values[1];
+							break;
+
+						case "REGHOST":
+							REG_HOST = values[1];
+							break;
+
+						case "REGPORT":
+							REG_PORT = Integer.parseInt(values[1]);
+							break;
+
+						case "TCPPORT":
+							TCP_PORT = Integer.parseInt(values[1]);
+							break;
+
+						case "UDPPORT":
+							UDP_PORT = Integer.parseInt(values[1]);
+							break;
+
+						case "MCPORT":
+							MC_PORT = Integer.parseInt(values[1]);
+							break;
+
+						case "TIMEOUT":
+							TIMEOUT = Integer.parseInt(values[1]);
+							break;
+
+						default:
+							break;
+					}
+				}
+			}
+
+		} catch (FileNotFoundException e) {
+			System.out.println("file di configurazione non trovato");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
 		users = new HashMap<String, User>();
 		online_users = new HashMap<String, Notifier>();
 		posts = new HashMap<Integer, Post>();
 
 		pool = Executors.newFixedThreadPool(10);
 		try {
-			LocateRegistry.createRegistry(REGISTER_PORT);
-			registry = LocateRegistry.getRegistry(REGISTER_PORT);
+			LocateRegistry.createRegistry(REG_PORT);
+			registry = LocateRegistry.getRegistry(REG_PORT);
 
-			server_socket = new ServerSocket(CORE_PORT);
+			server_socket = new ServerSocket(TCP_PORT);
 
 			System.out.println("Server attivo");
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
-			System.out.println("Porta " + CORE_PORT + " occupata");
+			System.out.println("Porta " + TCP_PORT + " occupata");
 		}
 	}
 

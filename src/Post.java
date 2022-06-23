@@ -1,6 +1,7 @@
 import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 
 public class Post {
 
@@ -9,7 +10,7 @@ public class Post {
 	private String content;
 	private String author;
 	private Map<String, Integer> votes;
-	private Map<String, String> comments;
+	private Map<String, List<String>> comments;
 
 	private static int id_count = 0;
 
@@ -20,7 +21,7 @@ public class Post {
 		this.content = content;
 		this.author = author;
 		this.votes = new HashMap<String, Integer>();
-		this.comments = new LinkedHashMap<String, String>();
+		this.comments = new HashMap<String, List<String>>();
 	}
 
 	public int id() {
@@ -66,10 +67,13 @@ public class Post {
 	}
 
 	public void comment(String user, String comment) {
-		comments.put(user, comment);
+		if (comments.get(user) == null) {
+			comments.put(user, new Vector<String>());
+		}
+		comments.get(user).add(comment);
 	}
 
-	public Map<String, String> comments() {
+	public Map<String, List<String>> comments() {
 		return comments;
 	}
 }
