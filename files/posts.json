@@ -1,0 +1,37 @@
+[ {
+  "id" : 0,
+  "title" : "partita",
+  "content" : "inter-milan",
+  "author" : "fede",
+  "votes" : {
+    "andrea" : 1,
+    "chiara" : 1
+  },
+  "comments" : {
+    "andrea" : [ "forza inter" ],
+    "chiara" : [ "milan merda" ]
+  },
+  "upVotes" : {
+    "andrea" : 1,
+    "chiara" : 1
+  },
+  "downVotes" : { }
+}, {
+  "id" : 1,
+  "title" : "java",
+  "content" : "linguaggio dimmerda",
+  "author" : "fede",
+  "votes" : {
+    "andrea" : -1,
+    "chiara" : 1
+  },
+  "comments" : {
+    "chiara" : [ "hai ragione" ]
+  },
+  "upVotes" : {
+    "chiara" : 1
+  },
+  "downVotes" : {
+    "andrea" : -1
+  }
+} ]

@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -15,6 +16,16 @@ import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.core.JsonEncoding;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+
 public class Server extends UnicastRemoteObject implements Registrator {
 
 	// core
@@ -28,6 +39,12 @@ public class Server extends UnicastRemoteObject implements Registrator {
 	// TCP
 	private ServerSocket server_socket;
 	private ExecutorService pool;
+
+	// JSON
+	private File backup_user;
+	private File backup_post;
+	private JsonFactory factory;
+	private ObjectMapper mapper;
 
 	// server settings
 	public static final String NAME = "WINSOME";
@@ -96,6 +113,39 @@ public class Server extends UnicastRemoteObject implements Registrator {
 		online_users = new HashMap<String, Notifier>();
 		posts = new HashMap<Integer, Post>();
 
+		backup_user = new File("files/users.json");
+		backup_post = new File("files/posts.json");
+		mapper = new ObjectMapper();
+		mapper.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
+		mapper.enable(SerializationFeature.INDENT_OUTPUT);
+
+		factory = new JsonFactory();
+		try (JsonParser parser = factory.createParser(backup_user)) {
+			parser.setCodec(mapper);
+			if (parser.nextToken() != JsonToken.START_ARRAY)
+				System.out.println("Il file Json non contiene un array");
+			else {
+				while (parser.nextToken() == JsonToken.START_OBJECT) {
+					User u = parser.readValueAs(User.class);
+					users.put(u.getUsername(), u);
+				}
+			}
+		} catch (IOException e) {
+		}
+
+		try (JsonParser parser = factory.createParser(backup_post)) {
+			parser.setCodec(mapper);
+			if (parser.nextToken() != JsonToken.START_ARRAY)
+				System.out.println("Il file Json non contiene un array");
+			else {
+				while (parser.nextToken() == JsonToken.START_OBJECT) {
+					Post p = parser.readValueAs(Post.class);
+					posts.put(p.id(), p);
+				}
+			}
+		} catch (IOException e) {
+		}
+
 		pool = Executors.newFixedThreadPool(10);
 		try {
 			LocateRegistry.createRegistry(REG_PORT);
@@ -154,6 +204,27 @@ public class Server extends UnicastRemoteObject implements Registrator {
 			pool.shutdown();
 			while (!pool.isTerminated())
 				;
+
+			// json user
+			JsonGenerator generator = factory.createGenerator(backup_user, JsonEncoding.UTF8);
+			generator.setCodec(mapper);
+			generator.useDefaultPrettyPrinter();
+			generator.writeStartArray();
+			for (User u : users.values())
+				generator.writeObject(u);
+			generator.writeEndArray();
+			generator.close();
+
+			// json post
+			generator = factory.createGenerator(backup_post, JsonEncoding.UTF8);
+			generator.setCodec(mapper);
+			generator.useDefaultPrettyPrinter();
+			generator.writeStartArray();
+			for (Post p : posts.values())
+				generator.writeObject(p);
+			generator.writeEndArray();
+			generator.close();
+
 			System.out.println("Server chiuso");
 		} catch (IOException e) {
 			e.printStackTrace();

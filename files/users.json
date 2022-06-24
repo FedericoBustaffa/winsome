@@ -1,0 +1,33 @@
+[ {
+  "username" : "andrea",
+  "password" : "4ndr34",
+  "tags" : [ "calcio", "pallavolo", "comunicazione" ],
+  "logged" : false,
+  "followers" : [ "chiara", "fede" ],
+  "following" : [ "chiara", "fede" ],
+  "posts" : [ 1 ]
+}, {
+  "username" : "chiara",
+  "password" : "ch14r4",
+  "tags" : [ "calcio", "pallavolo", "informatica" ],
+  "logged" : false,
+  "followers" : [ "andrea", "fede" ],
+  "following" : [ "andrea", "fede" ],
+  "posts" : [ 0, 1 ]
+}, {
+  "username" : "mario",
+  "password" : "m4r10",
+  "tags" : [ "palestra", "medicina" ],
+  "logged" : false,
+  "followers" : [ "fede" ],
+  "following" : [ ],
+  "posts" : [ ]
+}, {
+  "username" : "fede",
+  "password" : "f3d3",
+  "tags" : [ "calcio", "pallavolo", "informatica" ],
+  "logged" : false,
+  "followers" : [ "andrea", "chiara" ],
+  "following" : [ "andrea", "chiara", "mario" ],
+  "posts" : [ 0, 1 ]
+} ]

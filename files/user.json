@@ -1,9 +1,9 @@
 {
-  "username" : "a",
-  "password" : "aa",
-  "tags" : [ "a" ],
+  "username" : "fede",
+  "password" : "f3d3",
+  "tags" : [ "calcio", "pallavolo", "informatica" ],
   "logged" : true,
-  "followers" : [ ],
-  "following" : [ ],
-  "posts" : [ ]
+  "followers" : [ "andrea", "chiara" ],
+  "following" : [ "andrea", "chiara", "mario" ],
+  "posts" : [ 0, 1 ]
 }
